@@ -9,7 +9,8 @@ export async function initDatabase() {
         email TEXT NOT NULL UNIQUE,
         password_hash TEXT NOT NULL,
         created_at TEXT DEFAULT (datetime('now'))
-      )`
+      )`,
+      args: []
     },
     {
       sql: `CREATE TABLE IF NOT EXISTS menu_items (
@@ -19,7 +20,8 @@ export async function initDatabase() {
         price REAL NOT NULL,
         image_url TEXT DEFAULT '',
         category TEXT NOT NULL
-      )`
+      )`,
+      args: []
     },
     {
       sql: `CREATE TABLE IF NOT EXISTS orders (
@@ -33,7 +35,8 @@ export async function initDatabase() {
         status TEXT NOT NULL DEFAULT 'pending',
         created_at TEXT DEFAULT (datetime('now')),
         FOREIGN KEY (user_id) REFERENCES users(id)
-      )`
+      )`,
+      args: []
     },
     {
       sql: `CREATE TABLE IF NOT EXISTS order_items (
@@ -45,7 +48,8 @@ export async function initDatabase() {
         quantity INTEGER NOT NULL DEFAULT 1,
         FOREIGN KEY (order_id) REFERENCES orders(id),
         FOREIGN KEY (menu_item_id) REFERENCES menu_items(id)
-      )`
+      )`,
+      args: []
     },
     {
       sql: `CREATE TABLE IF NOT EXISTS contact_messages (
@@ -55,7 +59,8 @@ export async function initDatabase() {
         subject TEXT NOT NULL,
         message TEXT NOT NULL,
         created_at TEXT DEFAULT (datetime('now'))
-      )`
+      )`,
+      args: []
     }
   ]);
 
