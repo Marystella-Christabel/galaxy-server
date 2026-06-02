@@ -1,5 +1,6 @@
 import db from './connection.js';
 import { initDatabase } from './schema.js';
+import bcrypt from 'bcryptjs';
 
 const menuItems = [
   { title: "Classic Party Jollof", description: "Rich, smoky Jollof rice served with fried plantains and spicy grilled chicken.", price: 5500, image_url: "/images/jollof_rice.png", category: "Rice" },
@@ -25,18 +26,41 @@ async function seed() {
     const existing = await db.execute('SELECT COUNT(*) as count FROM menu_items');
     if (existing.rows[0].count > 0) {
       console.log('ℹ️  Menu items already seeded, skipping...');
-      return;
+    } else {
+      // Insert menu items
+      for (const item of menuItems) {
+        await db.execute({
+          sql: 'INSERT INTO menu_items (title, description, price, image_url, category) VALUES (?, ?, ?, ?, ?)',
+          args: [item.title, item.description, item.price, item.image_url, item.category],
+        });
+      }
+      console.log(`✅ Seeded ${menuItems.length} menu items`);
     }
 
-    // Insert menu items
-    for (const item of menuItems) {
+    // Seed default admin account
+    const adminEmail = 'admin@galaxy.com';
+    const existingAdmin = await db.execute({
+      sql: 'SELECT id FROM users WHERE email = ?',
+      args: [adminEmail],
+    });
+
+    if (existingAdmin.rows.length > 0) {
+      // Ensure existing admin user has admin role
       await db.execute({
-        sql: 'INSERT INTO menu_items (title, description, price, image_url, category) VALUES (?, ?, ?, ?, ?)',
-        args: [item.title, item.description, item.price, item.image_url, item.category],
+        sql: "UPDATE users SET role = 'admin' WHERE email = ?",
+        args: [adminEmail],
       });
-    }
+      console.log('ℹ️  Admin account already exists, ensured admin role');
+    } else {
+      const salt = await bcrypt.genSalt(10);
+      const passwordHash = await bcrypt.hash('admin123', salt);
 
-    console.log(`✅ Seeded ${menuItems.length} menu items`);
+      await db.execute({
+        sql: "INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, 'admin')",
+        args: ['Galaxy Admin', adminEmail, passwordHash],
+      });
+      console.log('✅ Created default admin account: admin@galaxy.com / admin123');
+    }
   } catch (error) {
     console.error('❌ Seed error:', error);
     process.exit(1);
@@ -44,3 +68,4 @@ async function seed() {
 }
 
 seed();
+

@@ -3,7 +3,7 @@ import db from '../db/connection.js';
 
 const router = Router();
 
-// GET /api/menu — Get all menu items (optional ?category= filter)
+// GET /api/menu — Get all available menu items (optional ?category= filter)
 router.get('/', async (req, res) => {
   try {
     const { category } = req.query;
@@ -11,11 +11,11 @@ router.get('/', async (req, res) => {
     let result;
     if (category && category !== 'All') {
       result = await db.execute({
-        sql: 'SELECT * FROM menu_items WHERE category = ?',
+        sql: 'SELECT * FROM menu_items WHERE category = ? AND available = 1',
         args: [category],
       });
     } else {
-      result = await db.execute('SELECT * FROM menu_items');
+      result = await db.execute('SELECT * FROM menu_items WHERE available = 1');
     }
 
     res.json({

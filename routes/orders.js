@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import db from '../db/connection.js';
-import { optionalAuth } from '../middleware/auth.js';
+import { authenticateToken, optionalAuth } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -59,9 +59,41 @@ router.post('/', optionalAuth, async (req, res) => {
   }
 });
 
-// GET /api/orders/user/:userId — Get orders for a specific user
-router.get('/user/:userId', async (req, res) => {
+// GET /api/orders/my — Get orders for the authenticated user
+router.get('/my', authenticateToken, async (req, res) => {
   try {
+    const ordersResult = await db.execute({
+      sql: 'SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC',
+      args: [req.user.id],
+    });
+
+    const orders = [];
+    for (const order of ordersResult.rows) {
+      const itemsResult = await db.execute({
+        sql: 'SELECT * FROM order_items WHERE order_id = ?',
+        args: [order.id],
+      });
+      orders.push({
+        ...order,
+        items: itemsResult.rows,
+      });
+    }
+
+    res.json(orders);
+  } catch (error) {
+    console.error('Orders fetch error:', error);
+    res.status(500).json({ error: 'Failed to fetch orders' });
+  }
+});
+
+// GET /api/orders/user/:userId — Get orders for a specific user (protected)
+router.get('/user/:userId', authenticateToken, async (req, res) => {
+  try {
+    // Users can only view their own orders
+    if (req.user.id !== Number(req.params.userId)) {
+      return res.status(403).json({ error: 'You can only view your own orders' });
+    }
+
     const ordersResult = await db.execute({
       sql: 'SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC',
       args: [req.params.userId],
